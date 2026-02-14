@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Relatório do Estudante — Matemágica</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .form-grid{display:grid;grid-template-columns:1fr;gap:10px;}
+    @media(min-width:720px){.form-grid{grid-template-columns:1fr 1fr;}}
+    label{display:flex;flex-direction:column;gap:6px;font-weight:700;}
+    input, select, textarea{
+      padding:10px 12px;border-radius:14px;border:1px solid rgba(0,0,0,0.2);
+      font-size:1em;background: var(--cor-card-claro);
+    }
+    textarea{min-height:90px;resize:vertical;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .bar{height:10px;border-radius:999px;background:rgba(0,0,0,0.08);overflow:hidden;}
+    .bar > div{height:100%;border-radius:999px;background:var(--cor-secundaria);}
+    .tiny{opacity:.85;font-size:.95em;}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,0.08);font-weight:800;}
+    #qrcode{display:flex;justify-content:center;margin-top:10px;}
+    .muted{opacity:.75;}
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <h1>📄 Relatório do Estudante</h1>
+      <p class="muted">Gere um QR para entregar ao professor em <strong>2 toques</strong>: <em>Gerar</em> → <em>Mostrar QR</em>.</p>
+      <div class="mm-row">
+        <a class="main-btn link-btn" href="index.school.html">⬅ Voltar ao app</a>
+      </div>
+    </header>
+
+    <div class="info-card">
+      <h3>Selecionar perfil</h3>
+      <div class="mm-row">
+        <select id="profile-select" aria-label="Selecionar perfil"></select>
+        <button id="btn-load-profile" class="main-btn" type="button">Carregar</button>
+      </div>
+      <p class="tiny">Se você usa “Perfis (Turma)” no app, escolha o estudante aqui para puxar dados automaticamente.</p>
+    </div>
+
+    <div class="info-card">
+      <h3>Identificação</h3>
+      <div class="form-grid">
+        <label>Nome do estudante
+          <input id="inp-name" placeholder="Ex.: Ana" />
+        </label>
+        <label>Código do estudante (recomendado)
+          <input id="inp-code" placeholder="Ex.: 6B-17" />
+        </label>
+        <label>Turma / Classe (recomendado)
+          <input id="inp-class" placeholder="Ex.: 6ºB" />
+        </label>
+        <label>Escola (opcional)
+          <input id="inp-school" placeholder="Ex.: E.M. ..." />
+        </label>
+      </div>
+      <div class="mm-row" style="margin-top:10px;">
+        <label style="flex:1;min-width:220px;">Período
+          <select id="period-select">
+            <option value="today">Hoje</option>
+            <option value="last7">Últimos 7 dias</option>
+            <option value="last30">Últimos 30 dias</option>
+            <option value="all">Tudo</option>
+          </select>
+        </label>
+        <button id="btn-generate" class="main-btn" type="button">Gerar relatório</button>
+      </div>
+    </div>
+
+    <div class="info-card" id="report-output">
+      <h3>Resumo</h3>
+      <p class="muted">Clique em <strong>Gerar relatório</strong>.</p>
+    </div>
+
+    <div class="info-card">
+      <h3>QR / Código</h3>
+      <div id="qrcode"></div>
+
+      <label style="margin-top:10px;">Código do relatório (MMR1)
+        <textarea id="report-code" readonly></textarea>
+      </label>
+
+      <div class="mm-row" style="margin-top:10px;">
+        <button id="btn-show-qr" class="main-btn" type="button">Mostrar QR</button>
+        <button id="btn-copy-code" class="main-btn" type="button">Copiar código</button>
+        <button id="btn-download-json" class="main-btn" type="button">Baixar JSON</button>
+        <button id="btn-download-csv" class="main-btn" type="button">Baixar CSV</button>
+        <button id="btn-download-weekly" class="main-btn" type="button">Resumo semanal</button>
+        <button id="btn-weekly-qr" class="secondary-btn" type="button">Gerar QR (Casa→Escola)</button>
+      </div>
+
+      <div id="weekly-qr-panel" style="display:none;margin-top:12px;">
+        <p class="tiny muted">Mostre os QR Codes para o professor. Se preferir, use um leitor de QR para copiar o texto e colar no Painel do Professor.</p>
+        <div id="weekly-qr-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;"></div>
+        <div style="margin-top:10px;">
+          <label class="tiny muted">Código (texto) — útil para copiar/colar</label>
+          <textarea id="weekly-qr-text" readonly style="min-height:90px;"></textarea>
+          <div class="mm-row" style="margin-top:8px;">
+            <button id="btn-copy-weekly-code" class="secondary-btn" type="button">Copiar código</button>
+            <button id="btn-hide-weekly-qr" class="secondary-btn" type="button">Fechar</button>
+          </div>
+        </div>
+      </div>
+
+      </div>
+
+      <p class="tiny">O professor pode importar pelo QR ou colar o código no <strong>Painel do Professor</strong>.</p>
+    </div>
+  </div>
+
+  <script src="qrcode.min.js"></script>
+  <script src="relatorio.school.js"></script>
+  <div id="vlibras-root"></div>
+  <script src="a11y.js"></script>
+</body>
+</html>
