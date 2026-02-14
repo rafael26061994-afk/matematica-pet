@@ -1,0 +1,225 @@
+{
+  "version": "1.0",
+  "updated": "2026-02-10",
+  "items": [
+    {
+      "tag": "ADD_C10",
+      "op": "add",
+      "title": "Completar 10/20",
+      "duration_min": 12,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "Desenhe 1 barra de 10 quadrinhos. Preencha 7 e pergunte: 'Quanto falta para 10?'",
+        "Faça 5 pares de completar 10: 8+2, 6+4, 9+1, 7+3, 5+5 (sem pressa, sem conta armada).",
+        "Passe para 20 com 2 barras: 14+6, 12+8, 11+9 (mostrar que é 10+10).",
+        "Mini-desafio (4 itens): peça para o aluno dizer o complemento antes de responder."
+      ],
+      "observe": [
+        "Responde complementos sem contar nos dedos em pares frequentes (8↔2, 7↔3).",
+        "Começa a 'ver' 10 e 20 como marcos."
+      ],
+      "revalidate": "No app: ≥85% em 20 itens ADD_C10, em 2 sessões."
+    },
+    {
+      "tag": "ADD_CARRY",
+      "op": "add",
+      "title": "Vai-um (troca de dezena)",
+      "duration_min": 15,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "No quadro, desenhe dezenas (barras) e unidades (bolinhas). Reforce: '10 unidades viram 1 dezena'.",
+        "Resolva 3 contas 2D+1D com vai-um: 23+8, 37+6, 48+7. Pergunte sempre: 'Quantas dezenas ganhou?'.",
+        "Resolva 2 contas 2D+2D com vai-um: 28+17 e 46+18, separando unidades/dezenas.",
+        "Checagem: aluno verbaliza o passo (unidades → troca → dezenas)."
+      ],
+      "observe": [
+        "Ao passar de 10 nas unidades, fala 'troca' e ajusta dezenas corretamente.",
+        "Para de somar tudo 'no bolo'."
+      ],
+      "revalidate": "No app: ≥85% em 20 itens ADD_CARRY, sem erro recorrente dominante."
+    },
+    {
+      "tag": "ADD_COMP",
+      "op": "add",
+      "title": "Compensação (chegar no redondo)",
+      "duration_min": 10,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "Mostre 49+6: 'pega 1 do 6 para virar 50; fica 50+5'.",
+        "Treino guiado: 29+6, 79+18, 98+7 (sempre 'vira redondo').",
+        "Aplicação: 59+14 (médio) ou 149+6 (difícil)."
+      ],
+      "observe": [
+        "Verbaliza 'completei o redondo e somei o resto'."
+      ],
+      "revalidate": "No app: ≥85% em 20 itens 'perto de marco' (50/100/200)."
+    },
+    {
+      "tag": "SUB_NO_BORROW",
+      "op": "sub",
+      "title": "Sem empréstimo (não emprestar sem precisar)",
+      "duration_min": 10,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "Regra: 'Se dá para tirar nas unidades, não empreste'.",
+        "Compare: 73−21 (sem) vs 71−28 (com). Antes de resolver, classifique 'precisa/não precisa'.",
+        "Faça 6 itens mistos (3 com, 3 sem): o aluno marca 'precisa?' e depois resolve."
+      ],
+      "observe": [
+        "Classifica corretamente só olhando as unidades.",
+        "Para de emprestar por hábito."
+      ],
+      "revalidate": "No app: 8/10 classificações corretas + ≥85% em 20 itens SUB_NO_BORROW."
+    },
+    {
+      "tag": "SUB_BORROW",
+      "op": "sub",
+      "title": "Empréstimo (troca de dezena)",
+      "duration_min": 15,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "Regra: 'Se falta unidade, transforme 1 dezena em 10 unidades'.",
+        "Resolva com desenho D/U: 52−7, 41−9, 61−28. Pergunte: 'Quantas unidades ficaram depois da troca?'.",
+        "Caderno: 4 itens com empréstimo progressivo.",
+        "Volta ao app: 5 itens SUB_BORROW imediatamente."
+      ],
+      "observe": [
+        "Reduz a dezena ao emprestar (não 'cria' 10 unidades do nada).",
+        "Entende que 50 vira 40 + 10 unidades."
+      ],
+      "revalidate": "No app: ≥85% em 20 itens SUB_BORROW, sem erro recorrente."
+    },
+    {
+      "tag": "SUB_COMP",
+      "op": "sub",
+      "title": "Compensação (−19/−29/−99)",
+      "duration_min": 12,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "Mostre 82−19 = 82−20+1 (setas no quadro).",
+        "Treino: 42−19, 63−29, 101−49.",
+        "Aplicação: 200−99."
+      ],
+      "observe": [
+        "Verbaliza 'tirei o redondo e devolvi 1'."
+      ],
+      "revalidate": "No app: ≥85% em itens com −9/−19/−99."
+    },
+    {
+      "tag": "MUL_VS_ADD",
+      "op": "mul",
+      "title": "Multiplicação não é soma (grupos iguais)",
+      "duration_min": 15,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "Desenhe 3×4 como 3 grupos de 4 (ou grade 3 linhas × 4 colunas).",
+        "Faça 4 exemplos: 2×4, 3×4, 4×3, 5×2, perguntando 'quantos grupos?' e 'quantos em cada?'.",
+        "Caderno: 3 itens 'desenhe e responda'."
+      ],
+      "observe": [
+        "Para de tentar somar os fatores.",
+        "Usa linguagem de 'grupos'."
+      ],
+      "revalidate": "No app: ≥85% em validação; erro conceitual ≤1."
+    },
+    {
+      "tag": "MUL_SWAP_TABLE",
+      "op": "mul",
+      "title": "Troca de tabuada (âncoras 5+1 / 5+2)",
+      "duration_min": 12,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "Ensine: 6×n = 5×n + 1×n; 7×n = 5×n + 2×n.",
+        "Faça pares: (6×7,7×7), (6×8,7×8), (6×9,7×9).",
+        "App: 10 itens mistos 6–10."
+      ],
+      "observe": [
+        "Quando 'não lembra', usa âncora e não chuta.",
+        "Erros deixam de concentrar numa tabuada só."
+      ],
+      "revalidate": "No app: estabilidade em 2 sessões sem 'troca'."
+    },
+    {
+      "tag": "MUL_9_ANCHOR",
+      "op": "mul",
+      "title": "Tabuada do 9 (10×n − n)",
+      "duration_min": 10,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "Regra: 9×n = 10×n − n.",
+        "Exemplos: 9×4, 9×6, 9×7, 9×8.",
+        "Checagem: aluno faz 10×n e subtrai n sem travar."
+      ],
+      "observe": [
+        "Faz 10×n automaticamente."
+      ],
+      "revalidate": "No app: ≥85% em validação com fator 9."
+    },
+    {
+      "tag": "MUL_DIST_11_20",
+      "op": "mul",
+      "title": "Distributiva curta (11–20)",
+      "duration_min": 15,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "Regra: (10+a)×n = 10×n + a×n.",
+        "Faça: 12×7, 15×8, 14×9 separando em 2 partes.",
+        "App: 10 itens 11–20 com decomposição."
+      ],
+      "observe": [
+        "Quebra em 10×n + resto×n ao invés de tentar decorar."
+      ],
+      "revalidate": "No app: ≥85% em 20 itens 11–20."
+    },
+    {
+      "tag": "DIV_SHARE",
+      "op": "div",
+      "title": "Divisão como partilha",
+      "duration_min": 15,
+      "materials": [
+        "quadro",
+        "caderno"
+      ],
+      "steps": [
+        "Represente 12 objetos em 3 grupos e distribua igualmente.",
+        "Exemplos: 12÷3, 15÷5, 20÷4.",
+        "Conecte com multiplicação: 3×4=12 então 12÷3=4."
+      ],
+      "observe": [
+        "Responde 'em cada grupo' e não chuta.",
+        "Consegue explicar o significado."
+      ],
+      "revalidate": "No app: ≥85% em validação; consegue explicar com palavras."
+    }
+  ]
+}
