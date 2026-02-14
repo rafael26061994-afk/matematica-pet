@@ -362,21 +362,12 @@ function keyFor(baseKey){
   return `${baseKey}__${sid}`;
 }
 
-// Storage facade (drop-in replacement) — FIX: sem recursão infinita
-const __rawLS = window.localStorage;
-
+// Storage facade (drop-in replacement)
 const LS = {
-  get(key) {
-    try { return __rawLS.getItem(keyFor(key)); } catch (_) { return null; }
-  },
-  set(key, val) {
-    try { __rawLS.setItem(keyFor(key), String(val)); } catch (_) {}
-  },
-  remove(key) {
-    try { __rawLS.removeItem(keyFor(key)); } catch (_) {}
-  }
+  get(key){ try{ return LS.get(keyFor(key)); }catch(_){ return null; } },
+  set(key, val){ try{ LS.set(keyFor(key), val); }catch(_){ } },
+  remove(key){ try{ LS.remove(keyFor(key)); }catch(_){ } }
 };
-
 
 // UI: seletor de aluno (se existir no index)
 function initSchoolStudentSelector(){
@@ -5910,69 +5901,4 @@ function setupTypedKeypad(){
 
   // render inicial
   try{ renderMissions(); }catch(e){}
-})();
-/* ============================
-   FIX UNIVERSAL — botões clicáveis no celular/PC
-   - Converte touch/pointer em click
-   - Evita duplo clique (touch + click)
-   ============================ */
-(function enableUniversalTapToClick(){
-  let lastSyntheticTs = 0;
-
-  function isDisabled(el){
-    if (!el) return true;
-    if (el.disabled) return true;
-    const aria = el.getAttribute && el.getAttribute('aria-disabled');
-    if (aria === 'true') return true;
-    if (el.classList && el.classList.contains('pet-locked')) return true;
-    return false;
-  }
-
-  function findClickableTarget(start){
-    if (!start) return null;
-    return start.closest(
-      'button, .operation-card, .level-card, .level-btn, .answer-option, .setting-btn, .mm-btn, .mm-grid-btn, .btn-action, .btn-secondary'
-    );
-  }
-
-  // Touch: transforma em click (com preventDefault para não “comer” o clique)
-  document.addEventListener('touchend', (e) => {
-    const target = findClickableTarget(e.target);
-    if (!target || isDisabled(target)) return;
-
-    const now = Date.now();
-    if (now - lastSyntheticTs < 350) return; // anti-duplo
-    lastSyntheticTs = now;
-
-    e.preventDefault();
-    e.stopPropagation();
-    try { target.click(); } catch (_) {}
-  }, { passive: false, capture: true });
-
-  // Pointer: cobre Android/Chrome moderno (pointerType touch)
-  document.addEventListener('pointerup', (e) => {
-    if (e.pointerType && e.pointerType !== 'touch') return;
-
-    const target = findClickableTarget(e.target);
-    if (!target || isDisabled(target)) return;
-
-    const now = Date.now();
-    if (now - lastSyntheticTs < 350) return;
-    lastSyntheticTs = now;
-
-    e.preventDefault();
-    e.stopPropagation();
-    try { target.click(); } catch (_) {}
-  }, { passive: false, capture: true });
-
-  // Segurança extra: Enter/Espaço em elementos não-button com role/button-like
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-
-    const target = findClickableTarget(document.activeElement);
-    if (!target || isDisabled(target)) return;
-
-    e.preventDefault();
-    try { target.click(); } catch (_) {}
-  }, true);
 })();
