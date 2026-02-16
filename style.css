@@ -1059,3 +1059,72 @@ body.layout-desktop #question-text{ font-size: 1.35rem; }
 /* Evita realce persistente por foco */
 .btn-answer:focus{ outline: none; }
 .btn-answer:focus-visible{ outline: 3px solid rgba(0,0,0,0.15); outline-offset: 3px; }
+
+
+
+/* === FIX: Alternativas sempre com a mesma cor (Dia = branco, Noite = preto) === */
+/* Suporta body.dark-mode, body.dark, .theme-dark (qualquer que exista no projeto) */
+
+:root{
+  --answer-bg-day: #ffffff;
+  --answer-bg-night: #000000;
+  --answer-text-day: #111111;
+  --answer-text-night: #ffffff;
+  --answer-border-day: rgba(0,0,0,.18);
+  --answer-border-night: rgba(255,255,255,.22);
+}
+
+/* Estado padrão (modo dia) */
+.answer-option,
+.answer-option:visited{
+  background: var(--answer-bg-day) !important;
+  color: var(--answer-text-day) !important;
+  border-color: var(--answer-border-day) !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Noite (tenta cobrir as classes mais comuns) */
+body.dark-mode .answer-option,
+body.dark .answer-option,
+body.theme-dark .answer-option,
+html.dark-mode body .answer-option,
+html.dark body .answer-option{
+  background: var(--answer-bg-night) !important;
+  color: var(--answer-text-night) !important;
+  border-color: var(--answer-border-night) !important;
+}
+
+/* NÃO mudar cor em hover/active/focus — mantém sempre igual */
+@media (hover:hover){
+  .answer-option:hover{
+    background: inherit !important;
+    color: inherit !important;
+  }
+}
+.answer-option:active,
+.answer-option:focus,
+.answer-option:focus-visible{
+  background: inherit !important;
+  color: inherit !important;
+  outline: 2px solid rgba(0,153,255,.35);
+  outline-offset: 2px;
+}
+
+/* Mesmo quando estiver correta/errada, manter fundo igual; use apenas borda/sombra */
+.answer-option.correct,
+.answer-option.wrong{
+  background: inherit !important;
+  color: inherit !important;
+}
+
+/* Se existirem regras que pintam correct/wrong, reforça só borda */
+.answer-option.correct{ box-shadow: 0 0 0 2px rgba(0,200,83,.45) inset; }
+.answer-option.wrong{ box-shadow: 0 0 0 2px rgba(255,82,82,.45) inset; }
+
+/* Mobile: evita “hover preso” alterar aparência */
+@media (hover:none){
+  .answer-option:hover{
+    background: inherit !important;
+    color: inherit !important;
+  }
+}
