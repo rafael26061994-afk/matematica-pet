@@ -1833,7 +1833,19 @@ function startGame(operation, level) {
     gameState.acertos = 0;
     gameState.erros = 0;
     
-    gameState.totalQuestions = gameState.isRapidMode ? 20 : Infinity;
+    // Quantidade de questões (Modo Rápido) por operação
+    if (gameState.isRapidMode) {
+        if (operation === 'addition' || operation === 'subtraction' || operation === 'division') {
+            gameState.totalQuestions = 100;
+        } else if (operation === 'potenciacao' || operation === 'radiciacao') {
+            gameState.totalQuestions = 30;
+        } else {
+            // Padrão (caso tenha outras operações no futuro)
+            gameState.totalQuestions = 20;
+        }
+    } else {
+        gameState.totalQuestions = Infinity;
+    }
 
     // --- Configuração especial: Tabuada da Multiplicação (por níveis) ---
 if (operation === 'multiplication' && gameState.multiplication && (gameState.multiplication.mode === 'direct' || gameState.multiplication.mode === 'trail')) {
