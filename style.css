@@ -181,8 +181,6 @@ header {
 /* Barra de Configurações (Dark Mode / Modo Jogo) */
 .settings-bar, .accessibility-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
@@ -223,29 +221,6 @@ header {
     background-color: var(--cor-secundaria);
     color: white;
     border-color: var(--cor-secundaria);
-}
-
-
-.layout-toggle {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-/* Layout forçado (Celular / PC) */
-body.layout-mobile .container { max-width: 460px; }
-body.layout-desktop .container { max-width: 980px; }
-
-body.layout-mobile .operation-grid { grid-template-columns: repeat(2, 1fr); }
-body.layout-desktop .operation-grid { grid-template-columns: repeat(3, 1fr); }
-
-/* Botões maiores no layout celular */
-body.layout-mobile .main-btn,
-body.layout-mobile .btn-primary,
-body.layout-mobile .answer-option {
-    padding: 14px 14px;
-    font-size: 1.05em;
 }
 
 .modes-toggle {
@@ -1032,3 +1007,43 @@ body.high-contrast {
 body.high-contrast .operation-card:hover,
 body.high-contrast .main-btn:hover,
 body.high-contrast .btn-primary:hover { transform: none; }
+
+
+/* =========================================================
+   Layout selector (Auto / Celular / PC)
+   ========================================================= */
+.layout-toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top: 8px;
+}
+.layout-label{
+    font-weight:600;
+    opacity:.9;
+}
+.layout-btn{
+    border:2px solid var(--cor-borda);
+    background: var(--cor-fundo-card);
+    color: var(--cor-texto);
+    padding: 8px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: transform .05s ease, filter .15s ease;
+}
+.layout-btn:hover{ filter: brightness(1.02); }
+.layout-btn:active{ transform: scale(.98); }
+.layout-btn.active{
+    border-color: var(--cor-primaria);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+}
+
+/* Força largura do app conforme escolha */
+body.layout-mobile .container{ max-width: 420px; }
+body.layout-desktop .container{ max-width: 920px; }
+
+/* Ajustes no desktop para aproveitar espaço */
+body.layout-desktop .answer-option{ font-size: 1.05rem; }
+body.layout-desktop #question-text{ font-size: 1.35rem; }

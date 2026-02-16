@@ -21,12 +21,12 @@ const btnShowAnswer = document.getElementById('btn-show-answer');
 const btnVoltarHome = document.querySelectorAll('.btn-voltar-home');
 const toggleVoiceRead = document.getElementById('toggle-voice-read');
 const toggleNightMode = document.getElementById('toggle-night-mode');
-const toggleLibras = document.getElementById('toggle-libras'); 
-const modeRapidoBtn = document.getElementById('mode-rapido');
-const modeEstudoBtn = document.getElementById('mode-estudo');
 const layoutAutoBtn = document.getElementById('layout-auto');
 const layoutMobileBtn = document.getElementById('layout-mobile');
 const layoutDesktopBtn = document.getElementById('layout-desktop');
+const toggleLibras = document.getElementById('toggle-libras'); 
+const modeRapidoBtn = document.getElementById('mode-rapido');
+const modeEstudoBtn = document.getElementById('mode-estudo');
 const levelButtons = document.querySelectorAll('.level-btn'); 
 
 // Badge flutuante: Progresso do ciclo (Tabuada)
@@ -1193,7 +1193,13 @@ function nextTrainingQuestion() {
     questionText.textContent = q.question;
 
     // Carrega opções
-    answerOptions.forEach((btn, i) => {
+    
+    // Evita "foco preso" no botão (parece alternativa selecionada na próxima questão)
+    answerOptions.forEach(btn => {
+        btn.addEventListener('mousedown', (e) => e.preventDefault());
+        btn.addEventListener('touchstart', (e) => e.preventDefault(), {passive:false});
+    });
+answerOptions.forEach((btn, i) => {
         btn.classList.remove('correct', 'wrong');
         btn.disabled = false;
         const numEl = btn.querySelector('.option-number');
@@ -2407,83 +2413,61 @@ speak(`Operação ${gameState.currentOperation} selecionada. Agora escolha o ní
         });
     }
 
-    // 8. Lógica para Dark/Light Mode + Persistência
-    const THEME_KEY = 'matemagica_theme_v1';
-
-    function applyTheme(isDark, save = true) {
-        if (isDark) {
-            document.body.classList.add('dark-mode');
-            document.body.classList.remove('light-mode');
-        } else {
-            document.body.classList.add('light-mode');
-            document.body.classList.remove('dark-mode');
-        }
-
-        // Atualiza texto + ícone do botão (Lua/Sol + Modo Noite/Dia)
-        if (toggleNightMode) {
-            try {
-                toggleNightMode.innerHTML = `<span class="icon">${isDark ? '☀️' : '🌙'}</span> ${isDark ? 'Modo Dia' : 'Modo Noite'}`;
-            } catch {
-                toggleNightMode.textContent = isDark ? '☀️ Modo Dia' : '🌙 Modo Noite';
-            }
-        }
-
-        // Atualiza theme-color (barra do navegador) em mobile
-        const meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.content = isDark ? '#111827' : '#ffffff';
-
-        if (save) {
-            try { localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light'); } catch {}
-        }
-    }
-
-    // Carrega tema salvo (se existir)
-    try {
-        const saved = localStorage.getItem(THEME_KEY);
-        if (saved === 'dark') applyTheme(true, false);
-        if (saved === 'light') applyTheme(false, false);
-    } catch {}
-
+    // 8. Lógica para Dark/Light Mode (sem duplicar rótulos/ícones)
     if (toggleNightMode) {
-        toggleNightMode.addEventListener('click', () => {
-            const isDark = !document.body.classList.contains('dark-mode');
-            applyTheme(isDark, true);
+        const renderThemeButton = (isDark) => {
+            // Zera o conteúdo para evitar duplicação de "Modo Noite"/"Modo Dia"
+            toggleNightMode.innerHTML = `<span class="icon">${isDark ? '☀️' : '🌙'}</span> ${isDark ? 'Modo Dia' : 'Modo Noite'}`;
+        };
+
+        const setTheme = (theme) => {
+            const isDark = theme === 'dark';
+            document.body.classList.toggle('dark-mode', isDark);
+            document.body.classList.toggle('light-mode', !isDark);
+            renderThemeButton(isDark);
+            try { localStorage.setItem('pet_theme', isDark ? 'dark' : 'light'); } catch(e) {}
+        };
+
+        toggleNightMode.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            const isDark = document.body.classList.contains('dark-mode');
+            setTheme(isDark ? 'light' : 'dark');
         });
-    }
 
-    // 8.1 Layout (Auto / Celular / PC) + Persistência
-    const LAYOUT_KEY = 'matemagica_layout_v1';
-
-    function applyLayout(layout, save = true) {
-        document.body.classList.remove('layout-mobile', 'layout-desktop');
-
-        const setActive = (btn, on) => { if (!btn) return; btn.classList.toggle('active', !!on); };
-
-        if (layout === 'mobile') document.body.classList.add('layout-mobile');
-        if (layout === 'desktop') document.body.classList.add('layout-desktop');
-
-        setActive(layoutAutoBtn, layout === 'auto');
-        setActive(layoutMobileBtn, layout === 'mobile');
-        setActive(layoutDesktopBtn, layout === 'desktop');
-
-        if (save) {
-            try { localStorage.setItem(LAYOUT_KEY, layout); } catch {}
+        function applyThemeFromStorage() {
+            let theme = 'light';
+            try { theme = localStorage.getItem('pet_theme') || 'light'; } catch(e) {}
+            setTheme(theme);
         }
-    }
+function applyLayout(layout){
+            document.body.classList.remove('layout-mobile','layout-desktop');
+            if (layout === 'mobile') document.body.classList.add('layout-mobile');
+            if (layout === 'desktop') document.body.classList.add('layout-desktop');
 
-    // Default: auto (responsivo), mas respeita preferência salva
-    try {
-        const savedLayout = localStorage.getItem(LAYOUT_KEY);
-        if (savedLayout === 'mobile' || savedLayout === 'desktop' || savedLayout === 'auto') {
-            applyLayout(savedLayout, false);
-        } else {
-            applyLayout('auto', false);
+            const setActive = (btn, on) => btn && btn.classList.toggle('active', !!on);
+            setActive(layoutAutoBtn, layout === 'auto');
+            setActive(layoutMobileBtn, layout === 'mobile');
+            setActive(layoutDesktopBtn, layout === 'desktop');
+
+            try { localStorage.setItem('pet_layout', layout); } catch(e) {}
         }
-    } catch { applyLayout('auto', false); }
 
-    if (layoutAutoBtn) layoutAutoBtn.addEventListener('click', () => applyLayout('auto', true));
-    if (layoutMobileBtn) layoutMobileBtn.addEventListener('click', () => applyLayout('mobile', true));
-    if (layoutDesktopBtn) layoutDesktopBtn.addEventListener('click', () => applyLayout('desktop', true));
+        function applyLayoutFromStorage(){
+            let layout = 'auto';
+            try { layout = localStorage.getItem('pet_layout') || 'auto'; } catch(e) {}
+            if (!['auto','mobile','desktop'].includes(layout)) layout = 'auto';
+            applyLayout(layout);
+        }
+
+        // Listeners de layout
+        if (layoutAutoBtn) layoutAutoBtn.addEventListener('click', () => applyLayout('auto'));
+        if (layoutMobileBtn) layoutMobileBtn.addEventListener('click', () => applyLayout('mobile'));
+        if (layoutDesktopBtn) layoutDesktopBtn.addEventListener('click', () => applyLayout('desktop'));
+
+        // Aplica preferências ao carregar
+        applyThemeFromStorage();
+        applyLayoutFromStorage();
+        }
 
     // 9. Botões de Ação do Jogo (Estender Tempo / Ajuda)
     btnExtendTime.addEventListener('click', () => {
