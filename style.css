@@ -324,10 +324,17 @@ header {
     color: var(--cor-texto-principal);
 }
 
-.btn-answer:hover:not(:disabled) {
+@media (hover: hover) and (pointer: fine) {
+  .btn-answer:hover:not(:disabled) {
     background-color: #e9ecef;
+  }
 }
-
+@media (hover: none) and (pointer: coarse) {
+  /* Evita "hover preso" no celular após tocar */
+  .btn-answer:hover:not(:disabled) {
+    background-color: transparent;
+  }
+}
 .btn-answer.correct {
     background-color: var(--cor-sucesso);
     color: white;
@@ -1047,3 +1054,8 @@ body.layout-desktop .container{ max-width: 920px; }
 /* Ajustes no desktop para aproveitar espaço */
 body.layout-desktop .answer-option{ font-size: 1.05rem; }
 body.layout-desktop #question-text{ font-size: 1.35rem; }
+
+
+/* Evita realce persistente por foco */
+.btn-answer:focus{ outline: none; }
+.btn-answer:focus-visible{ outline: 3px solid rgba(0,0,0,0.15); outline-offset: 3px; }
