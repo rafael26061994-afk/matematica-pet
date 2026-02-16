@@ -1,3 +1,26 @@
+
+
+// === Controle de exibição do feedback (rapido x estudo) ===
+window.__feedbackControl = window.__feedbackControl || {
+  timer: null,
+  lastShownAt: 0
+};
+
+function showFeedbackControlled(message, type, durationMs) {
+  // limpa timer anterior
+  try { if (window.__feedbackControl.timer) clearTimeout(window.__feedbackControl.timer); } catch (e) {}
+  showFeedbackMessage(message, type, durationMs);
+  // guarda timer (showFeedbackMessage já agenda hide, mas guardamos referência conceitual)
+  window.__feedbackControl.lastShownAt = Date.now();
+}
+
+function hideFeedbackNow() {
+  if (!feedbackMessageElement) return;
+  try { if (window.__feedbackControl.timer) clearTimeout(window.__feedbackControl.timer); } catch (e) {}
+  feedbackMessageElement.classList.remove('show');
+  setTimeout(() => feedbackMessageElement.classList.add('hidden'), 50);
+}
+
 // --- VARIÁVEIS DE ESTADO GLOBAL E CACHE DE ELEMENTOS ---
 const screens = document.querySelectorAll('.screen');
 const questionText = document.getElementById('question-text');
@@ -324,6 +347,121 @@ function speakSequence(texts) {
 }
 
 /** Monta textos para leitura de voz: 1) pergunta 2) alternativas (1–4). */
+
+// === Feedback pedagógico inteligente (explicativo) ===
+function fmtNum(n){ return (typeof n==='number' && Number.isFinite(n)) ? n : Number(n); }
+
+
+
+function explainAnswer(operation, num1, num2, correct, userAnswer) {
+    const a = Number(num1), b = Number(num2);
+
+    switch (operation) {
+
+        // ✅ BASE (mantida): completar para a próxima dezena
+        case 'addition': {
+            const falta = (10 - (a % 10)) % 10;
+            if (falta > 0 && falta < 10) {
+                const a2 = a + falta;
+                return `Jeito fácil: complete ${a} até ${a2} (faltam ${falta}). Faça ${a2} + ${b} e depois tire ${falta}.`;
+            }
+            return `Some devagar: ${a} + ${b}. Comece pelo mais fácil e depois complete.`;
+        }
+
+        // ➖ Subtração: ir até uma dezena “redonda” e depois voltar
+        case 'subtraction': {
+            // Ex.: 42 - 17 -> 42 - 2 = 40, depois 40 - 15
+            const faltaParaBaixo = a % 10; // quanto falta para descer até a dezena
+            if (faltaParaBaixo > 0 && b > faltaParaBaixo) {
+                const a2 = a - faltaParaBaixo;
+                const b2 = b - faltaParaBaixo;
+                return `Jeito fácil: leve ${a} até ${a2} (tire ${faltaParaBaixo}). Depois faça ${a2} − ${b2}.`;
+            }
+            // Se b é pequeno, tira direto
+            return `Jeito fácil: tire em partes. Ex.: tire ${b%10} e depois tire as dezenas.`;
+        }
+
+        // ✖️ Multiplicação: quebrar o número e somar parcelas iguais
+        case 'multiplication': {
+            // Ex.: 6×7 = 6×5 + 6×2
+            if (b > 5) {
+                const parte = 5;
+                const resto = b - parte;
+                return `Jeito fácil: quebre ${b}. Faça ${a}×${parte} e depois ${a}×${resto}. Depois some as duas partes.`;
+            }
+            return `Jeito fácil: repita a soma. Ex.: ${a}×${b} é somar ${a} (${b} vezes).`;
+        }
+
+        // ➗ Divisão: “testa a tabuada” até chegar perto sem passar
+        case 'division': {
+            // Ex.: 84 ÷ 7 -> 7×10=70, falta 14, 7×2=14
+            const tent = Math.floor(a / b);
+            const chute = Math.max(1, Math.min(10, tent)); // mantém simples
+            const prod = b * chute;
+            if (prod <= a) {
+                const falta = a - prod;
+                if (falta === 0) {
+                    return `Jeito fácil: pense na tabuada do ${b}. Qual conta dá ${a}?`;
+                }
+                return `Jeito fácil: ache um “quase”. ${b}×${chute} = ${prod}. Falta ${falta}. Continue na tabuada do ${b} até completar.`;
+            }
+            return `Jeito fácil: use a tabuada do ${b}. Vá testando até passar e volte uma.`;
+        }
+
+        // ^ Potenciação: “vezes ele mesmo” (b vezes) e começar pequeno
+        case 'potenciacao': {
+            if (b <= 2) {
+                return `Jeito fácil: ${a}^${b} é ${a}×${a} (se for 2).`;
+            }
+            return `Jeito fácil: é ${a} vezes ele mesmo ${b} vezes. Comece: ${a}×${a} e vá multiplicando de novo até completar.`;
+        }
+
+        // √ Radiciação: procurar o quadrado perfeito (tabuada do “vezes ele mesmo”)
+        case 'radiciacao': {
+            const chute = Math.round(Math.sqrt(a));
+            const p = chute * chute;
+            if (p === a) {
+                return `Jeito fácil: pense “qual número vezes ele mesmo dá ${a}?”`;
+            }
+            return `Jeito fácil: teste: 5×5=25, 6×6=36, 7×7=49… até chegar em ${a}.`;
+        }
+
+        default:
+            return `Tente de novo com calma.`;
+    }
+}
+
+
+
+
+
+function showPedagogicalFeedback(isCorrect, operation, q, selectedValue) {
+    // Regras:
+    // - Modo Rápido: 15s ou até acabar o tempo ou acertar/seguir para a próxima.
+    // - Modo Estudo: fica visível até o usuário responder novamente.
+    const isRapid = !!gameState.isRapidMode;
+    const DURATION_RAPID = 15000;
+
+    // Mensagem curta e útil (sem revelar resposta correta)
+    if (isCorrect) {
+        // No rápido, sucesso pode ser curto; no estudo também pode ser curto
+        showFeedbackControlled('✅ Correto! Boa! Continue.', 'success', isRapid ? 2500 : 2500);
+        return;
+    }
+
+    // Dica de raciocínio (para acertar na próxima tentativa)
+    const msg = explainAnswer(operation, q?.num1, q?.num2, q?.answer, selectedValue);
+
+    if (isRapid) {
+        showFeedbackControlled('💡 ' + msg, 'incentive', DURATION_RAPID);
+    } else {
+        // Estudo: mantém até próxima resposta (usamos um duration bem alto e escondemos manualmente no próximo clique)
+        showFeedbackControlled('💡 ' + msg, 'incentive', 600000); // 10 min (será escondido antes)
+        window.__keepFeedbackUntilNextAnswer = true;
+    }
+}
+
+
 function buildVoiceTextsForQuestion(questionObj) {
     if (!questionObj) return [];
 
@@ -2026,6 +2164,13 @@ function saveError(question, userAnswer) {
 
 
 function handleAnswer(selectedAnswer, selectedButton) {
+
+    // ✅ Modo Estudo: ao responder novamente, esconde a dica anterior
+    if (window.__keepFeedbackUntilNextAnswer) {
+        window.__keepFeedbackUntilNextAnswer = false;
+        hideFeedbackNow();
+    }
+
     if (!gameState.isGameActive) return;
     if (gameState.answerLocked) return;
     if (selectedButton && selectedButton.disabled) return;
@@ -2053,6 +2198,9 @@ function handleAnswer(selectedAnswer, selectedButton) {
     if (selectedButton) {
         selectedButton.classList.remove('correct', 'wrong');
         selectedButton.classList.add(isCorrect ? 'correct' : 'wrong');
+    // ✅ Feedback explicativo pedagógico
+    showPedagogicalFeedback(isCorrect, gameState.currentOperation, gameState.currentQuestion, selectedAnswer);
+
 
         // ✅ IMPORTANTE: tira o foco para não \"ficar marcado\" na próxima questão
         selectedButton.blur();
@@ -2093,12 +2241,8 @@ function handleAnswer(selectedAnswer, selectedButton) {
             librasAlert.classList.add('hidden');
         }
 
-        showFeedbackMessage(
-            (gameState.attemptsThisQuestion === 0) ? 'RESPOSTA CORRETA!' : 'CORRETA (após tentar de novo)!',
-            'success'
-        );
-
-        if (isTraining) {
+        // (feedback substituído por showPedagogicalFeedback)
+    if (isTraining) {
             // Avança só quando acertar
             setTimeout(() => {
                 gameState.trainingIndex++;
@@ -2128,16 +2272,15 @@ function handleAnswer(selectedAnswer, selectedButton) {
     if (isTraining) {
         // Desabilita só a alternativa errada (evita repetir a mesma)
         if (selectedButton) selectedButton.disabled = true;
-        showFeedbackMessage('Ainda não. Tente outra alternativa!', 'warning', 1600);
-        return;
+        // (feedback substituído por showPedagogicalFeedback)
+    return;
     }
 
     // No jogo normal: permite refazer 1 vez (2 tentativas no total)
     if (gameState.attemptsThisQuestion < gameState.maxAttemptsPerQuestion) {
         if (selectedButton) selectedButton.disabled = true; // não deixa clicar de novo na mesma
-        showFeedbackMessage('Quase! Tente outra alternativa.', 'warning', 1600);
-
-        // Mantém o tempo correndo normalmente (não para o timer)
+        // (feedback substituído por showPedagogicalFeedback)
+    // Mantém o tempo correndo normalmente (não para o timer)
         if (gameState.isRapidMode) {
             // nada a fazer; o timer já está rodando
         }
@@ -2154,8 +2297,7 @@ function handleAnswer(selectedAnswer, selectedButton) {
         btn.disabled = true;
     });
 
-    showFeedbackMessage('RESPOSTA INCORRETA!', 'warning', 1800);
-
+    // (feedback substituído por showPedagogicalFeedback)
     // Próxima questão (sem repor tempo)
     setTimeout(() => {
         if (gameState.isRapidMode) startTimer();
@@ -2287,7 +2429,8 @@ function startTimer() {
             clearInterval(gameState.timer);
             playAlertSound();
             showFeedbackMessage("Tempo esgotado! Game Over!", 'error', 3000);
-            endGame(); 
+                hideFeedbackNow();
+    endGame(); 
             return;
         }
         
