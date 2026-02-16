@@ -17,7 +17,7 @@ answerOptions.forEach((btn) => {
     // Impede o browser de manter foco/realce após toque/click
     btn.addEventListener('pointerdown', (e) => e.preventDefault());
     btn.addEventListener('mousedown', (e) => e.preventDefault());
-    btn.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+    btn.addEventListener('touchstart', () => setTimeout(clearAnswerFocus, 0), { passive: true });
 
     // Alguns browsers mantêm realce até o "end"; limpamos novamente.
     btn.addEventListener('pointerup', () => setTimeout(clearAnswerFocus, 0));
