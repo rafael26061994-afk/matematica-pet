@@ -24,6 +24,9 @@ const toggleNightMode = document.getElementById('toggle-night-mode');
 const toggleLibras = document.getElementById('toggle-libras'); 
 const modeRapidoBtn = document.getElementById('mode-rapido');
 const modeEstudoBtn = document.getElementById('mode-estudo');
+const layoutAutoBtn = document.getElementById('layout-auto');
+const layoutMobileBtn = document.getElementById('layout-mobile');
+const layoutDesktopBtn = document.getElementById('layout-desktop');
 const levelButtons = document.querySelectorAll('.level-btn'); 
 
 // Badge flutuante: Progresso do ciclo (Tabuada)
@@ -101,6 +104,80 @@ const gameState = {
     erros: 0
 };
 
+// === ACESSIBILIDADE EXTRA: ZOOM E CONTRASTE (persistente) ===
+const UI_SCALE_KEY = 'pet_ui_scale_v1';
+const UI_CONTRAST_KEY = 'pet_ui_contrast_v1';
+
+function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+
+function applyUiScale(scale) {
+    const s = clamp(Number(scale) || 1, 0.85, 1.35);
+    document.documentElement.style.setProperty('--ui-scale', String(s));
+    try { localStorage.setItem(UI_SCALE_KEY, String(s)); } catch (_) {}
+    return s;
+}
+
+function toggleHighContrast(force) {
+    const enabled = (typeof force === 'boolean') ? force : !document.body.classList.contains('high-contrast');
+    document.body.classList.toggle('high-contrast', enabled);
+    try { localStorage.setItem(UI_CONTRAST_KEY, enabled ? '1' : '0'); } catch (_) {}
+    return enabled;
+}
+
+function loadAccessibilityPrefs() {
+    try {
+        const savedScale = localStorage.getItem(UI_SCALE_KEY);
+        if (savedScale) applyUiScale(savedScale);
+        const savedContrast = localStorage.getItem(UI_CONTRAST_KEY);
+        if (savedContrast) toggleHighContrast(savedContrast === '1');
+    } catch (_) {}
+}
+
+// Recalcula tempo do Modo Rápido ao ligar/desligar acessibilidade durante o jogo
+function recomputeRapidTimeWithAccessibility() {
+    if (!gameState.isRapidMode) return;
+    if (!gameState.isGameActive) return;
+
+    // baseTime conforme nível
+    let baseTime = 300;
+    switch (gameState.currentLevel) {
+        case 'easy': baseTime = 150; break;
+        case 'medium': baseTime = 300; break;
+        case 'advanced': baseTime = 450; break;
+        default: baseTime = 300;
+    }
+
+    const isLibrasActive = document.body.classList.contains('libras-mode');
+    const isAccessibilityActive = gameState.isVoiceReadActive || isLibrasActive;
+
+    const newMax = isAccessibilityActive ? baseTime * 2 : baseTime;
+    if (!Number.isFinite(newMax) || newMax <= 0) return;
+
+    // Ajusta proporcionalmente o tempo restante (mantém o %)
+    const prevMax = Number(gameState.maxTime) || newMax;
+    const prevLeft = Number(gameState.timeLeft) || 0;
+    const pct = prevMax > 0 ? (prevLeft / prevMax) : 1;
+
+    gameState.maxTime = newMax;
+    gameState.timeLeft = Math.max(1, Math.round(newMax * clamp(pct, 0, 1)));
+
+    // Atualiza barra imediatamente
+    try {
+        const percentage = (gameState.timeLeft / gameState.maxTime) * 100;
+        timeBar.style.width = `${percentage}%`;
+    } catch (_) {}
+}
+
+
+
+function updateAccessibilityOnClass() {
+    const librasActive = document.body.classList.contains('libras-mode');
+    const voiceActive = !!gameState.isVoiceReadActive;
+    document.body.classList.toggle('accessibility-on', voiceActive || librasActive);
+}
+
+
+
 
 // --- FUNÇÕES UTILITY E ACESSIBILIDADE ---
 
@@ -123,6 +200,9 @@ function exibirTela(id) {
     if (id === 'home-screen' || id === 'result-screen') {
         updateErrorTrainingButton();
     }
+
+    // Mentor só aparece na tela de questões
+    try { updateMentorVisibility(id); } catch (_) {}
 }
 
 /** Reproduz o som de alerta */
@@ -1122,6 +1202,9 @@ function nextTrainingQuestion() {
         if (txtEl) txtEl.textContent = q.options[i];
     });
 
+    // ✅ Garante que nenhuma alternativa venha "selecionada" (com foco)
+    answerOptions.forEach(btn => btn.blur());
+
     // Progresso do ciclo: reusa badge existente
     updateCycleProgressUI();
 
@@ -1179,14 +1262,14 @@ function rangeInclusive(min, max) {
 function getTabuadaRangeByLevel(level) {
     switch (level) {
         case 'easy':
-            // Fácil: tabuadas 1–5, multiplicadores 1–10
-            return { min: 1, max: 5, multMin: 1, multMax: 10, label: 'Fácil (1–5 | ×1–10)' };
+            // Fácil: tabuadas 0–5, multiplicadores 0–10
+            return { min: 0, max: 5, multMin: 0, multMax: 10, label: 'Fácil (0–5 | ×0–10)' };
         case 'medium':
-            // Médio: tabuadas 6–10, multiplicadores 1–10
-            return { min: 6, max: 10, multMin: 1, multMax: 10, label: 'Médio (6–10 | ×1–10)' };
+            // Médio: tabuadas 6–10, multiplicadores 0–10
+            return { min: 6, max: 10, multMin: 0, multMax: 10, label: 'Médio (6–10 | ×0–10)' };
         case 'advanced':
-            // Avançado: tabuadas 11–20, multiplicadores 1–20
-            return { min: 11, max: 20, multMin: 1, multMax: 20, label: 'Avançado (11–20 | ×1–20)' };
+            // Difícil: tabuadas 11–20, multiplicadores 0–20
+            return { min: 11, max: 20, multMin: 0, multMax: 20, label: 'Difícil (11–20 | ×0–20)' };
         default:
             return { min: 0, max: 20, multMin: 0, multMax: 20, label: 'Completo (0–20 | ×0–20)' };
     }
@@ -1840,6 +1923,13 @@ gameState.questionNumber++;
         btn.classList.remove('correct', 'wrong');
         btn.disabled = false;
     });
+    // ✅ Garante que nenhuma alternativa venha "selecionada" (com foco)
+    answerOptions.forEach(btn => btn.blur());
+
+    // 4. Atualizar Mentor (dicas)
+    updateMentorForCurrentQuestion();
+
+
 
     // 4. Leitura de Voz
     announceCurrentQuestion();
@@ -1871,6 +1961,10 @@ function handleAnswer(selectedAnswer, selectedButton) {
     const q = gameState.currentQuestion;
     if (!q) return;
 
+    // Se havia uma dica visível, ela deve sumir quando o aluno responder.
+    hideMentorBubble();
+    if (gameState.mentor) gameState.mentor.rapidHintShownThisQuestion = false;
+
     const isTraining = !!gameState.isTrainingErrors;
     const isCorrect = selectedAnswer === q.answer;
 
@@ -1887,6 +1981,9 @@ function handleAnswer(selectedAnswer, selectedButton) {
     if (selectedButton) {
         selectedButton.classList.remove('correct', 'wrong');
         selectedButton.classList.add(isCorrect ? 'correct' : 'wrong');
+
+        // ✅ IMPORTANTE: tira o foco para não \"ficar marcado\" na próxima questão
+        selectedButton.blur();
     }
 
     if (isCorrect) {
@@ -1997,6 +2094,10 @@ function handleAnswer(selectedAnswer, selectedButton) {
 function endGame() {
     gameState.isGameActive = false;
     if (gameState.isRapidMode) stopTimer();
+
+    // Garante que dica/mentor não fique sobre a tela de resultados
+    hideMentorBubble();
+    if (gameState.mentor) gameState.mentor.rapidHintShownThisQuestion = false;
 
     // 1. Calcular XP Ganhos na Rodada (apenas para exibição)
     const xpGained = gameState.acertos * (gameState.isRapidMode ? 5 : 2) - gameState.erros * 2;
@@ -2159,6 +2260,25 @@ function stopTimer() {
 // --- LISTENERS DE EVENTOS ---
 
 function attachEventListeners() {
+
+    // Acessibilidade extra (Zoom e Contraste)
+    const btnZoomIn = document.getElementById('zoom-in');
+    const btnZoomOut = document.getElementById('zoom-out');
+    const btnContrast = document.getElementById('toggle-contrast');
+
+    if (btnZoomIn && btnZoomOut) {
+        const getCurrentScale = () => {
+            const v = getComputedStyle(document.documentElement).getPropertyValue('--ui-scale').trim();
+            return Number(v) || 1;
+        };
+        btnZoomIn.addEventListener('click', () => applyUiScale(getCurrentScale() + 0.05));
+        btnZoomOut.addEventListener('click', () => applyUiScale(getCurrentScale() - 0.05));
+    }
+    if (btnContrast) {
+        btnContrast.addEventListener('click', () => toggleHighContrast());
+    }
+
+
     
     // 1. Seleção de Operação (Vai para a tela de Nível)
     operationButtons.forEach(button => {
@@ -2269,6 +2389,7 @@ speak(`Operação ${gameState.currentOperation} selecionada. Agora escolha o ní
             toggleVoiceRead.classList.toggle('active', isActive);
             if(synth) synth.cancel();
             speak(`Leitura de Voz ${isActive ? 'ativada' : 'desativada'}!`);
+            updateAccessibilityOnClass();
             showFeedbackMessage(`Leitura de Voz ${isActive ? 'ativada' : 'desativada'}!`, 'info', 2000);
         });
     }
@@ -2278,6 +2399,7 @@ speak(`Operação ${gameState.currentOperation} selecionada. Agora escolha o ní
         toggleLibras.addEventListener('click', () => {
             const isActive = document.body.classList.toggle('libras-mode');
             toggleLibras.classList.toggle('active', isActive);
+            updateAccessibilityOnClass();
             const message = isActive 
                 ? 'Modo Libras (Acessibilidade) ATIVADO! O tempo de jogo será dobrado no Modo Rápido.'
                 : 'Modo Libras DESATIVADO.';
@@ -2285,15 +2407,83 @@ speak(`Operação ${gameState.currentOperation} selecionada. Agora escolha o ní
         });
     }
 
-    // 8. Lógica para Dark/Light Mode
+    // 8. Lógica para Dark/Light Mode + Persistência
+    const THEME_KEY = 'matemagica_theme_v1';
+
+    function applyTheme(isDark, save = true) {
+        if (isDark) {
+            document.body.classList.add('dark-mode');
+            document.body.classList.remove('light-mode');
+        } else {
+            document.body.classList.add('light-mode');
+            document.body.classList.remove('dark-mode');
+        }
+
+        // Atualiza texto + ícone do botão (Lua/Sol + Modo Noite/Dia)
+        if (toggleNightMode) {
+            try {
+                toggleNightMode.innerHTML = `<span class="icon">${isDark ? '☀️' : '🌙'}</span> ${isDark ? 'Modo Dia' : 'Modo Noite'}`;
+            } catch {
+                toggleNightMode.textContent = isDark ? '☀️ Modo Dia' : '🌙 Modo Noite';
+            }
+        }
+
+        // Atualiza theme-color (barra do navegador) em mobile
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = isDark ? '#111827' : '#ffffff';
+
+        if (save) {
+            try { localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light'); } catch {}
+        }
+    }
+
+    // Carrega tema salvo (se existir)
+    try {
+        const saved = localStorage.getItem(THEME_KEY);
+        if (saved === 'dark') applyTheme(true, false);
+        if (saved === 'light') applyTheme(false, false);
+    } catch {}
+
     if (toggleNightMode) {
-         toggleNightMode.addEventListener('click', () => {
-            document.body.classList.toggle('light-mode');
-            document.body.classList.toggle('dark-mode');
-            const isDarkMode = document.body.classList.contains('dark-mode');
-            toggleNightMode.querySelector('.icon').textContent = isDarkMode ? '☀️' : '🌙';
+        toggleNightMode.addEventListener('click', () => {
+            const isDark = !document.body.classList.contains('dark-mode');
+            applyTheme(isDark, true);
         });
     }
+
+    // 8.1 Layout (Auto / Celular / PC) + Persistência
+    const LAYOUT_KEY = 'matemagica_layout_v1';
+
+    function applyLayout(layout, save = true) {
+        document.body.classList.remove('layout-mobile', 'layout-desktop');
+
+        const setActive = (btn, on) => { if (!btn) return; btn.classList.toggle('active', !!on); };
+
+        if (layout === 'mobile') document.body.classList.add('layout-mobile');
+        if (layout === 'desktop') document.body.classList.add('layout-desktop');
+
+        setActive(layoutAutoBtn, layout === 'auto');
+        setActive(layoutMobileBtn, layout === 'mobile');
+        setActive(layoutDesktopBtn, layout === 'desktop');
+
+        if (save) {
+            try { localStorage.setItem(LAYOUT_KEY, layout); } catch {}
+        }
+    }
+
+    // Default: auto (responsivo), mas respeita preferência salva
+    try {
+        const savedLayout = localStorage.getItem(LAYOUT_KEY);
+        if (savedLayout === 'mobile' || savedLayout === 'desktop' || savedLayout === 'auto') {
+            applyLayout(savedLayout, false);
+        } else {
+            applyLayout('auto', false);
+        }
+    } catch { applyLayout('auto', false); }
+
+    if (layoutAutoBtn) layoutAutoBtn.addEventListener('click', () => applyLayout('auto', true));
+    if (layoutMobileBtn) layoutMobileBtn.addEventListener('click', () => applyLayout('mobile', true));
+    if (layoutDesktopBtn) layoutDesktopBtn.addEventListener('click', () => applyLayout('desktop', true));
 
     // 9. Botões de Ação do Jogo (Estender Tempo / Ajuda)
     btnExtendTime.addEventListener('click', () => {
@@ -2386,6 +2576,242 @@ speak(`Operação ${gameState.currentOperation} selecionada. Agora escolha o ní
 
 }
 
+/* =========================================================================
+   MENTORES (Rafael/Ronaldo) — Dicas simples e úteis
+   Regras:
+   - Modo Estudo: 3 dicas por questão (Dica 1/2/3). Pode usar em todas as questões.
+   - Modo Rápido: apenas Dica 1 e só 1 dica a cada 3 questões (por sessão). Se não estiver disponível, não faz nada.
+   - Nunca mostra a resposta.
+   ========================================================================= */
+
+let mentorBtn = null;
+let mentorImg = null;
+let mentorBubble = null;
+
+function initMentorUI() {
+    // Evita duplicar
+    if (mentorBtn) return;
+
+    // Cria botão flutuante (apenas na tela de jogo)
+    mentorBtn = document.createElement('button');
+    mentorBtn.id = 'mentor-btn';
+    mentorBtn.type = 'button';
+    mentorBtn.setAttribute('aria-label', 'Dica do mentor');
+    mentorBtn.className = 'mentor-btn';
+
+    mentorImg = document.createElement('img');
+    mentorImg.id = 'mentor-img';
+    mentorImg.alt = 'Mentor';
+    mentorImg.decoding = 'async';
+    mentorImg.loading = 'lazy';
+    mentorImg.className = 'mentor-img';
+
+    mentorBtn.appendChild(mentorImg);
+
+    mentorBubble = document.createElement('div');
+    mentorBubble.id = 'mentor-bubble';
+    mentorBubble.className = 'mentor-bubble hidden';
+    mentorBubble.setAttribute('role', 'status');
+    mentorBubble.setAttribute('aria-live', 'polite');
+
+    document.body.appendChild(mentorBtn);
+    document.body.appendChild(mentorBubble);
+
+    // Por padrão, o mentor só aparece na tela de questões (game-screen)
+    mentorBtn.style.display = 'none';
+
+    // Estado
+    if (!gameState.mentor) {
+        gameState.mentor = {
+            studyTipIndex: 0,         // 0=nenhuma, 1=dica1, 2=dica2, 3=dica3
+            lastRapidHintQuestion: -999, // usado para regra 1 dica a cada 3 questões
+            rapidHintShownThisQuestion: false,
+            rapidTipText: ''          // guarda a dica do modo rápido para poder esconder/mostrar na mesma questão
+        };
+    }
+
+    // Click
+    mentorBtn.addEventListener('click', () => {
+        tryShowMentorTip();
+    });
+}
+
+
+function updateMentorVisibility(screenId) {
+    if (!mentorBtn || !mentorBubble) return;
+    const shouldShow = (screenId === 'game-screen');
+    mentorBtn.style.display = shouldShow ? 'flex' : 'none';
+    if (!shouldShow) hideMentorBubble();
+}
+
+function updateMentorForCurrentQuestion() {
+    // Só faz sentido quando estamos na tela do jogo e há questão
+    if (!mentorBtn || !mentorImg || !mentorBubble) return;
+    if (!gameState.currentQuestion) return;
+
+    // Reset de dica por questão no modo estudo
+    if (!gameState.isRapidMode && gameState.mentor) {
+        gameState.mentor.studyTipIndex = 0;
+    }
+
+    // Reset de estado por questão no modo rápido
+    if (gameState.isRapidMode && gameState.mentor) {
+        gameState.mentor.rapidHintShownThisQuestion = false;
+        gameState.mentor.rapidTipText = '';
+    }
+
+    // Alterna imagem por questão (Rafael ímpar, Ronaldo par)
+    const qn = Number(gameState.questionNumber || 1);
+    mentorImg.src = (qn % 2 === 1) ? 'rafael.png' : 'ronaldo.png';
+
+    // Esconde bubble ao trocar de questão
+    hideMentorBubble();
+}
+
+function hideMentorBubble() {
+    if (!mentorBubble) return;
+    mentorBubble.classList.add('hidden');
+    mentorBubble.textContent = '';
+}
+
+function showMentorBubble(text) {
+    if (!mentorBubble) return;
+    mentorBubble.textContent = String(text || '').trim();
+    if (!mentorBubble.textContent) return;
+    mentorBubble.classList.remove('hidden');
+}
+
+function canShowRapidHintNow() {
+    if (!gameState.mentor) return true;
+    const last = Number(gameState.mentor.lastRapidHintQuestion ?? -999);
+    const now = Number(gameState.questionNumber || 0);
+    // "1 dica a cada 3 questões": precisa ter distância >= 3
+    return (now - last) >= 3;
+}
+
+function tryShowMentorTip() {
+    const q = gameState.currentQuestion;
+    if (!q) return;
+
+    // Modo Rápido: 1 dica simples. Clique alterna mostrar ↔ esconder.
+    // Regra: 1 dica a cada 3 questões. Se já usou a dica nesta questão, pode mostrar/esconder sem consumir novamente.
+    if (gameState.isRapidMode) {
+        // Se a dica está visível, clique esconde.
+        if (mentorBubble && !mentorBubble.classList.contains('hidden')) {
+            hideMentorBubble();
+            return;
+        }
+
+        // Se já mostrou a dica nesta questão, clique mostra de novo (toggle).
+        if (gameState.mentor?.rapidHintShownThisQuestion) {
+            const tip = (gameState.mentor.rapidTipText || getMentorTipsForQuestion(q)[0]);
+            showMentorBubble(tip);
+            if (gameState.mentor) gameState.mentor.rapidTipText = tip;
+            return;
+        }
+
+        // Ainda não usou a dica nesta questão: checa limite 1 a cada 3 questões
+        if (!canShowRapidHintNow()) return; // não mostra nada
+
+        const tip = getMentorTipsForQuestion(q)[0];
+        showMentorBubble(tip);
+
+        if (gameState.mentor) {
+            gameState.mentor.lastRapidHintQuestion = Number(gameState.questionNumber || 0);
+            gameState.mentor.rapidHintShownThisQuestion = true;
+            gameState.mentor.rapidTipText = tip;
+        }
+        return;
+    }
+
+    // Modo estudo: 3 dicas por questão com ciclo 1→2→3→(sumir)→1...
+    const tips = getMentorTipsForQuestion(q);
+    const state = Number(gameState.mentor?.studyTipIndex || 0); // 0=nenhuma, 1..3=qual dica está visível
+
+    if (state === 0) {
+        showMentorBubble(tips[0]);
+        if (gameState.mentor) gameState.mentor.studyTipIndex = 1;
+        return;
+    }
+    if (state === 1) {
+        showMentorBubble(tips[1]);
+        if (gameState.mentor) gameState.mentor.studyTipIndex = 2;
+        return;
+    }
+    if (state === 2) {
+        showMentorBubble(tips[2]);
+        if (gameState.mentor) gameState.mentor.studyTipIndex = 3;
+        return;
+    }
+
+    // state === 3 → some a dica; próximo clique volta para Dica 1
+    hideMentorBubble();
+    if (gameState.mentor) gameState.mentor.studyTipIndex = 0;
+}
+/** Retorna 3 dicas simples e úteis (nunca a resposta) baseadas na operação e números. */
+function getMentorTipsForQuestion(q) {
+    const op = q.operacao || gameState.currentOperation || '';
+    const a = Number(q.num1);
+    const b = Number(q.num2);
+
+    switch (op) {
+        case 'addition': {
+            const unitA = a % 10;
+            const unitB = b % 10;
+            const carry = (unitA + unitB) >= 10;
+            return [
+                carry ? 'Some as unidades primeiro. Se passar de 10, “vai 1” para a dezena.' : 'Some as unidades. Depois some as dezenas.',
+                'Faça em duas partes: unidades e dezenas.',
+                'Para conferir: pegue o resultado e tire um dos números. Deve dar o outro.'
+            ];
+        }
+        case 'subtraction': {
+            const unitA = a % 10;
+            const unitB = b % 10;
+            const needBorrow = unitA < unitB;
+            return [
+                needBorrow ? 'Se a unidade de cima é menor, “empreste” 1 dezena (vira +10 nas unidades).' : 'Tire as unidades. Depois tire as dezenas.',
+                'Vá com calma: unidades primeiro, depois dezenas.',
+                'Para conferir: some o resultado com o número que você tirou. Deve voltar ao primeiro.'
+            ];
+        }
+        case 'multiplication': {
+            return [
+                'Pense como tabuada: é somar o mesmo número várias vezes.',
+                'Use truque: vezes 10 é só colocar um zero; vezes 5 é a metade do vezes 10.',
+                'Quebre o número: por exemplo, vezes 6 = vezes 5 + vezes 1.'
+            ];
+        }
+        case 'division': {
+            return [
+                'Dividir é achar na tabuada: “qual número vezes o divisor dá o total?”',
+                'Tente números e confira: quociente × divisor tem que dar o dividendo.',
+                'Se não souber, use a tabuada do divisor e procure o total.'
+            ];
+        }
+        case 'potenciacao': {
+            return [
+                'Potência é multiplicar o mesmo número várias vezes.',
+                'Exemplo: a^3 é a×a×a (3 vezes).',
+                'Faça passo a passo: calcule uma multiplicação por vez.'
+            ];
+        }
+        case 'radiciacao': {
+            return [
+                'Raiz é o “voltar” da potência.',
+                'Pergunta: “que número vezes ele mesmo dá esse valor?”',
+                'Teste 2, 3, 4... e confira multiplicando.'
+            ];
+        }
+        default:
+            return [
+                'Faça por partes e com calma.',
+                'Depois confira pela operação inversa.',
+                'Se travar, volte uma etapa e tente de novo.'
+            ];
+    }
+}
+
 
 // --- INICIALIZAÇÃO DO DOCUMENTO ---
 
@@ -2397,13 +2823,17 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTeacherPrefs();
     initPWA(); 
     
-    // 2. Anexa todos os listeners
+    
+    initMentorUI();
+    try { updateMentorVisibility(gameState.currentScreen || 'home-screen'); } catch (_) {}
+// 2. Anexa todos os listeners
     loadMultiplicationConfig();
     
     // Progresso separado por faixa/nível da tabuada + perfil (opcional)
     loadMultProgressMap();
     loadStudentProfile();
     ensureProfileUI();
+loadAccessibilityPrefs();
 attachEventListeners();
     initTeacherPanel();
 

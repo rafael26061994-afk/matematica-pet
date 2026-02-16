@@ -181,6 +181,8 @@ header {
 /* Barra de Configurações (Dark Mode / Modo Jogo) */
 .settings-bar, .accessibility-bar {
     display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
@@ -221,6 +223,29 @@ header {
     background-color: var(--cor-secundaria);
     color: white;
     border-color: var(--cor-secundaria);
+}
+
+
+.layout-toggle {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Layout forçado (Celular / PC) */
+body.layout-mobile .container { max-width: 460px; }
+body.layout-desktop .container { max-width: 980px; }
+
+body.layout-mobile .operation-grid { grid-template-columns: repeat(2, 1fr); }
+body.layout-desktop .operation-grid { grid-template-columns: repeat(3, 1fr); }
+
+/* Botões maiores no layout celular */
+body.layout-mobile .main-btn,
+body.layout-mobile .btn-primary,
+body.layout-mobile .answer-option {
+    padding: 14px 14px;
+    font-size: 1.05em;
 }
 
 .modes-toggle {
@@ -935,3 +960,75 @@ body:not(.dark-mode) .map-node {
 /* Teacher panel forced light */
 .teacher-panel { background: #ffffff !important; color: #000000 !important; }
 .teacher-panel * { color: inherit; }
+
+
+/* =========================================================================
+   Mentor (avatar + dica) — sem alterar estrutura
+   ========================================================================= */
+.mentor-btn{
+  position: fixed;
+  right: 14px;
+  bottom: 110px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--cor-primaria);
+  background: var(--cor-card-claro);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1500;
+}
+.mentor-btn:focus-visible{
+  outline: 3px solid var(--cor-incentivo);
+  outline-offset: 3px;
+}
+.mentor-img{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.mentor-bubble{
+  position: fixed;
+  right: 92px;
+  bottom: 120px;
+  max-width: min(320px, calc(100vw - 130px));
+  background: var(--cor-card-claro);
+  color: var(--cor-texto-principal);
+  border: 1px solid var(--cor-borda-clara);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+  z-index: 1500;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.mentor-bubble.hidden{ display:none; }
+
+/* Em acessibilidade (uma mão), sobe o mentor pra não atrapalhar respostas */
+body.accessibility-on .mentor-btn{ bottom: 140px; }
+body.accessibility-on .mentor-bubble{ bottom: 150px; }
+
+
+/* === Acessibilidade: Zoom de Tela (UI Scale) === */
+:root { --ui-scale: 1; }
+.container { transform: scale(var(--ui-scale)); transform-origin: top center; }
+
+/* === Acessibilidade: Alto Contraste === */
+body.high-contrast {
+  --cor-primaria: #000000;
+  --cor-secundaria: #000000;
+  --cor-sucesso: #000000;
+  --cor-erro: #000000;
+  --cor-incentivo: #000000;
+  --cor-fundo-claro: #ffffff;
+  --cor-card-claro: #ffffff;
+  --cor-texto-principal: #000000;
+  --cor-borda-clara: #000000;
+}
+body.high-contrast .operation-card:hover,
+body.high-contrast .main-btn:hover,
+body.high-contrast .btn-primary:hover { transform: none; }
