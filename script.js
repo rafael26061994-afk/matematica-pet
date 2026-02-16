@@ -11,6 +11,24 @@ const alertSound = document.getElementById('alert-sound');
 const librasAlert = document.getElementById('libras-alert');
 // Remover mensagem visual de tempo baixo (mantém apenas som aos 5s finais)
 if (librasAlert) librasAlert.textContent = '';
+// ✅ Evita que a última alternativa fique com 'foco' (parecendo selecionada) na próxima questão
+// Isso impede o browser de manter o botão focado após o clique/toque.
+answerOptions.forEach((btn) => {
+    btn.addEventListener('mousedown', (e) => e.preventDefault());
+    btn.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+});
+
+function clearAnswerFocus() {
+    try {
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+            document.activeElement.blur();
+        }
+    } catch (e) {}
+    answerOptions.forEach((b) => {
+        if (b && typeof b.blur === 'function') b.blur();
+    });
+}
+
 
 
 // Cache de botões e telas
@@ -1193,12 +1211,6 @@ function nextTrainingQuestion() {
     questionText.textContent = q.question;
 
     // Carrega opções
-    
-    // Evita "foco preso" no botão (parece alternativa selecionada na próxima questão)
-    answerOptions.forEach(btn => {
-        btn.addEventListener('mousedown', (e) => e.preventDefault());
-        btn.addEventListener('touchstart', (e) => e.preventDefault(), {passive:false});
-    });
 answerOptions.forEach((btn, i) => {
         btn.classList.remove('correct', 'wrong');
         btn.disabled = false;
@@ -1209,7 +1221,7 @@ answerOptions.forEach((btn, i) => {
     });
 
     // ✅ Garante que nenhuma alternativa venha "selecionada" (com foco)
-    answerOptions.forEach(btn => btn.blur());
+    clearAnswerFocus();
 
     // Progresso do ciclo: reusa badge existente
     updateCycleProgressUI();
@@ -1930,7 +1942,7 @@ gameState.questionNumber++;
         btn.disabled = false;
     });
     // ✅ Garante que nenhuma alternativa venha "selecionada" (com foco)
-    answerOptions.forEach(btn => btn.blur());
+    clearAnswerFocus();
 
     // 4. Atualizar Mentor (dicas)
     updateMentorForCurrentQuestion();
@@ -1990,6 +2002,7 @@ function handleAnswer(selectedAnswer, selectedButton) {
 
         // ✅ IMPORTANTE: tira o foco para não \"ficar marcado\" na próxima questão
         selectedButton.blur();
+        clearAnswerFocus();
     }
 
     if (isCorrect) {
