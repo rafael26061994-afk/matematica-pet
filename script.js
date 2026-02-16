@@ -30,6 +30,23 @@ const playerScoreElement = document.getElementById('player-score');
 const playerXPElement = document.getElementById('player-xp');
 const questionCounter = document.getElementById('question-counter');
 const feedbackMessageElement = document.getElementById('feedback-message');
+const feedbackCloseBtn = document.getElementById('feedback-close');
+
+// Botão X para fechar o balão de dica/feedback
+if (typeof feedbackCloseBtn !== 'undefined' && feedbackCloseBtn) {
+    feedbackCloseBtn.addEventListener('click', () => {
+        if (typeof hideFeedbackNow === 'function') {
+            hideFeedbackNow();
+        } else if (typeof hideFeedbackMessage === 'function') {
+            hideFeedbackMessage();
+        } else if (feedbackMessageElement) {
+            feedbackMessageElement.classList.remove('show');
+            setTimeout(() => feedbackMessageElement.classList.add('hidden'), 50);
+        }
+        // em modo estudo, se fechar manualmente, não força reabrir até próximo erro
+        window.__keepFeedbackUntilNextAnswer = false;
+    });
+}
 const alertSound = document.getElementById('alert-sound');
 const librasAlert = document.getElementById('libras-alert');
 // Remover mensagem visual de tempo baixo (mantém apenas som aos 5s finais)
@@ -544,11 +561,13 @@ function announceCurrentQuestion() {
 
 /** Exibe mensagens de feedback */
 function showFeedbackMessage(message, type, duration = 3000) {
+    const feedbackTextElement = document.getElementById('feedback-text');
+
     if (!feedbackMessageElement) return;
 
     feedbackMessageElement.className = 'feedback-message hidden';
     feedbackMessageElement.classList.add(type);
-    feedbackMessageElement.textContent = message;
+    if (feedbackTextElement) { feedbackTextElement.textContent = message; } else { feedbackMessageElement.textContent = message; }
 
     setTimeout(() => {
         feedbackMessageElement.classList.remove('hidden');

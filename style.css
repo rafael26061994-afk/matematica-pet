@@ -1142,3 +1142,24 @@ html.dark body .answer-option{
   white-space: normal;
   line-height: 1.3;
 }
+
+
+
+
+
+
+/* FIX: botão X no balão (sem alterar layout/tamanho do balão) */
+.feedback-close{
+  position:absolute;
+  top:8px;
+  right:10px;
+  border:none;
+  background:transparent;
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+  padding:4px 6px;
+  border-radius:8px;
+  z-index:2;
+}
+.feedback-close:active{ transform:scale(0.96); }
