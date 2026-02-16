@@ -394,18 +394,7 @@ function explainAnswer(operation, num1, num2, correct, userAnswer) {
 
         // ➗ Divisão: “testa a tabuada” até chegar perto sem passar
         case 'division': {
-            // Ex.: 84 ÷ 7 -> 7×10=70, falta 14, 7×2=14
-            const tent = Math.floor(a / b);
-            const chute = Math.max(1, Math.min(10, tent)); // mantém simples
-            const prod = b * chute;
-            if (prod <= a) {
-                const falta = a - prod;
-                if (falta === 0) {
-                    return `Jeito fácil: pense na tabuada do ${b}. Qual conta dá ${a}?`;
-                }
-                return `Jeito fácil: ache um “quase”. ${b}×${chute} = ${prod}. Falta ${falta}. Continue na tabuada do ${b} até completar.`;
-            }
-            return `Jeito fácil: use a tabuada do ${b}. Vá testando até passar e volte uma.`;
+            return `Dividir é REPARTIR em partes iguais. Pergunta: “se eu tenho ${a} e vou repartir em ${b} partes, quanto fica em cada parte?”`;
         }
 
         // ^ Potenciação: “vezes ele mesmo” (b vezes) e começar pequeno
@@ -431,6 +420,66 @@ function explainAnswer(operation, num1, num2, correct, userAnswer) {
     }
 }
 
+// === Modo Estudo: explicação passo a passo (tipo professor) ===
+function explainSteps(operation, num1, num2) {
+    const a = Number(num1), b = Number(num2);
+    const join = (arr) => arr.filter(Boolean).join('  |  ');
+
+    switch (operation) {
+        case 'addition': {
+            const falta = (10 - (a % 10)) % 10;
+            if (falta > 0 && falta < 10) {
+                const a2 = a + falta;
+                return join([
+                    `Passo 1: complete ${a} até ${a2} (faltam ${falta})`,
+                    `Passo 2: faça ${a2} + ${b}`,
+                    `Passo 3: tire ${falta}`,
+                    `Pronto`
+                ]);
+            }
+            return join([`Passo 1: some partes fáceis`, `Passo 2: complete`, `Pronto`]);
+        }
+        case 'subtraction': {
+            const faltaParaBaixo = a % 10;
+            if (faltaParaBaixo > 0 && b > faltaParaBaixo) {
+                const a2 = a - faltaParaBaixo;
+                const b2 = b - faltaParaBaixo;
+                return join([
+                    `Passo 1: leve ${a} até ${a2} (tire ${faltaParaBaixo})`,
+                    `Passo 2: faça ${a2} − ${b2}`,
+                    `Pronto`
+                ]);
+            }
+            return join([`Passo 1: tire unidades`, `Passo 2: tire dezenas`, `Pronto`]);
+        }
+        case 'multiplication': {
+            if (b > 5) {
+                const parte = 5, resto = b - 5;
+                return join([`Passo 1: quebre ${b} em 5 + ${resto}`, `Passo 2: ${a}×5`, `Passo 3: ${a}×${resto}`, `Passo 4: some`, `Pronto`]);
+            }
+            return join([`Passo 1: soma repetida`, `Passo 2: some ${a} (${b} vezes)`, `Pronto`]);
+        }
+        case 'division': {
+            return join([
+                `Passo 1: dividir é REPARTIR em partes iguais.`,
+                `Passo 2: imagine ${a} itens para ${b} pessoas (ou caixas).`,
+                `Passo 3: vá distribuindo 1 para cada pessoa, repetindo as voltas.`,
+                `Passo 4: quando acabar, veja quantos cada um recebeu.`,
+                `Passo 5: se sobrar algum item, isso é o RESTO.`
+            ]);
+        }
+        case 'potenciacao': {
+            return join([`Passo 1: é multiplicar ${a} por ele mesmo`, `Passo 2: faça isso ${b} vezes`, `Pronto`]);
+        }
+        case 'radiciacao': {
+            return join([`Passo 1: teste 1×1, 2×2, 3×3...`, `Passo 2: quando der ${a}, achou`, `Pronto`]);
+        }
+        default:
+            return `Passo 1: tente de novo com calma.`;
+    }
+}
+
+
 
 
 
@@ -450,13 +499,13 @@ function showPedagogicalFeedback(isCorrect, operation, q, selectedValue) {
     }
 
     // Dica de raciocínio (para acertar na próxima tentativa)
-    const msg = explainAnswer(operation, q?.num1, q?.num2, q?.answer, selectedValue);
+    const msg = isRapid ? explainAnswer(operation, q?.num1, q?.num2, q?.answer, selectedValue) : explainSteps(operation, q?.num1, q?.num2);
 
     if (isRapid) {
-        showFeedbackControlled('💡 ' + msg, 'incentive', DURATION_RAPID);
+        showFeedbackControlled('💡 Dica rápida: ' + msg, 'incentive', DURATION_RAPID);
     } else {
         // Estudo: mantém até próxima resposta (usamos um duration bem alto e escondemos manualmente no próximo clique)
-        showFeedbackControlled('💡 ' + msg, 'incentive', 600000); // 10 min (será escondido antes)
+        showFeedbackControlled('👩‍🏫 Passo a passo: ' + msg, 'incentive', 600000); // 10 min (será escondido antes)
         window.__keepFeedbackUntilNextAnswer = true;
     }
 }
