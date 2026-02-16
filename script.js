@@ -14,19 +14,61 @@ if (librasAlert) librasAlert.textContent = '';
 // ✅ Evita que a última alternativa fique com 'foco' (parecendo selecionada) na próxima questão
 // Isso impede o browser de manter o botão focado após o clique/toque.
 answerOptions.forEach((btn) => {
+    // Impede o browser de manter foco/realce após toque/click
+    btn.addEventListener('pointerdown', (e) => e.preventDefault());
     btn.addEventListener('mousedown', (e) => e.preventDefault());
     btn.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+
+    // Alguns browsers mantêm realce até o "end"; limpamos novamente.
+    btn.addEventListener('pointerup', () => setTimeout(clearAnswerFocus, 0));
+    btn.addEventListener('mouseup', () => setTimeout(clearAnswerFocus, 0));
+    btn.addEventListener('touchend', () => setTimeout(clearAnswerFocus, 0), { passive: true });
 });
 
+let __focusSink = null;
+function __ensureFocusSink() {
+    if (__focusSink) return;
+    try {
+        const sink = document.createElement('button');
+        sink.type = 'button';
+        sink.tabIndex = -1;
+        sink.setAttribute('aria-hidden', 'true');
+        sink.style.position = 'fixed';
+        sink.style.left = '-9999px';
+        sink.style.top = '0';
+        sink.style.width = '1px';
+        sink.style.height = '1px';
+        sink.style.opacity = '0';
+        sink.style.pointerEvents = 'none';
+        document.body.appendChild(sink);
+        __focusSink = sink;
+    } catch (e) {}
+}
+
 function clearAnswerFocus() {
+    __ensureFocusSink();
+
+    // 1) Tenta desfocar o elemento ativo atual
     try {
         if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
         }
     } catch (e) {}
+
+    // 2) Remove foco de cada alternativa
     answerOptions.forEach((b) => {
-        if (b && typeof b.blur === 'function') b.blur();
+        try {
+            if (b && typeof b.blur === 'function') b.blur();
+        } catch (e) {}
     });
+
+    // 3) Força o navegador a mover o foco para um "sink" invisível (resolve casos persistentes em alguns browsers)
+    try {
+        if (__focusSink && typeof __focusSink.focus === 'function') {
+            __focusSink.focus();
+            __focusSink.blur();
+        }
+    } catch (e) {}
 }
 
 
