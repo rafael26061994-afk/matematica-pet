@@ -1,5 +1,21 @@
 
 
+/* =========================================================
+   XP por velocidade (Modo Rápido)
+   - Quanto mais rápido responde, mais XP.
+   - Se responder no fim do tempo, ganha menos.
+   ========================================================= */
+function calcSpeedXP(baseXP, timeLeftUnits, totalUnits, isFastMode){
+    if (!isFastMode) return baseXP;
+    if (!totalUnits || totalUnits <= 0) return baseXP;
+
+    const ratio = Math.max(0, Math.min(1, (timeLeftUnits || 0) / totalUnits)); // 0..1
+    // 1x (fim do tempo) até 3x (muito rápido)
+    const mult = 1 + (2 * ratio);
+    return Math.max(1, Math.round(baseXP * mult));
+}
+
+
 // === Controle de exibição do feedback (rapido x estudo) ===
 window.__feedbackControl = window.__feedbackControl || {
   timer: null,
@@ -851,7 +867,12 @@ function carregarXP() {
 }
 function atualizarXP(amount) {
     gameState.xp += amount;
-    playerXPElement.textContent = `XP: ${gameState.xp}`;
+    
+    // Soma XP ganho nesta rodada (para relatório final)
+    if (gameState && gameState.isGameActive) {
+        gameState.xpGainedRound = (Number(gameState.xpGainedRound) || 0) + amount;
+    }
+playerXPElement.textContent = `XP: ${gameState.xp}`;
     localStorage.setItem('matemagica_xp', gameState.xp);
 }
 
@@ -1434,6 +1455,7 @@ function startErrorTraining() {
     gameState.acertos = 0;
     gameState.erros = 0;
     gameState.isGameActive = true;
+    gameState.xpGainedRound = 0;
     gameState.isTrainingErrors = false;
     gameState.attemptsThisQuestion = 0;
     if (btnShowAnswer) btnShowAnswer.disabled = false;
@@ -2293,7 +2315,15 @@ function handleAnswer(selectedAnswer, selectedButton) {
         const baseGain = gameState.isRapidMode ? 20 * gameState.questionNumber : 10;
         const multiplier = (gameState.attemptsThisQuestion === 0) ? 1 : 0.7;
         const scoreGain = Math.round(baseGain * multiplier);
-        const xpGain = gameState.isRapidMode ? 5 : 2;
+        // XP (Modo Rápido): quanto mais rápido, mais XP
+        const xpBase = gameState.isRapidMode ? 5 : 2;
+        let xpGain = xpBase;
+        if (gameState.isRapidMode) {
+            xpGain = calcSpeedXP(xpBase, Number(gameState.timeLeft) || 0, Number(gameState.maxTime) || 0, true);
+            // Se precisou de mais de 1 tentativa, reduz um pouco o XP (mantém a regra de "acertar de primeira vale mais")
+            if (gameState.attemptsThisQuestion > 0) xpGain = Math.max(1, Math.round(xpGain * 0.7));
+        }
+
 
         gameState.score += scoreGain;
         atualizarXP(xpGain);
@@ -2383,7 +2413,7 @@ function endGame() {
     if (gameState.mentor) gameState.mentor.rapidHintShownThisQuestion = false;
 
     // 1. Calcular XP Ganhos na Rodada (apenas para exibição)
-    const xpGained = gameState.acertos * (gameState.isRapidMode ? 5 : 2) - gameState.erros * 2;
+    const xpGained = Number(gameState.xpGainedRound) || 0;
     
     // 2. Atualizar UI de Resultados
     document.getElementById('final-score').textContent = gameState.score;
