@@ -3132,6 +3132,31 @@ attachEventListeners();
     // Inicializa o badge de progresso (fica oculto até o jogo começar)
     ensureCycleProgressBadge();
     
+    
+    // --- Rodapé legal (aparece apenas ao final da rolagem) ---
+    try {
+        const __PET_LEGAL_HTML = `
+          <div class="pet-legal-footer" role="contentinfo">
+            <small>
+              © 2026 Rafael Oliveira e Ronaldo Soares. Todos os direitos reservados.<br/>
+              PET — Programa de Estudo da Tabuada é um projeto educacional institucional vinculado à Escola Municipal Vereador José Ferreira de Aguiar (Contagem/MG).<br/>
+              Uso autorizado exclusivamente para fins educacionais. É vedada a reprodução, redistribuição, modificação ou exploração comercial, total ou parcial, sem autorização prévia e expressa de ambos os autores.<br/>
+              É vedada a supressão de créditos/avisos de autoria e qualquer apresentação do projeto como de terceiros.
+            </small>
+          </div>
+        `;
+
+        document.querySelectorAll('.screen').forEach((screenEl) => {
+            if (!screenEl) return;
+            if (screenEl.querySelector('.pet-legal-footer')) return;
+            const holder = document.createElement('div');
+            holder.innerHTML = __PET_LEGAL_HTML.trim();
+            const footerEl = holder.firstElementChild;
+            if (footerEl) screenEl.appendChild(footerEl);
+        });
+    } catch (e) {}
+
+
     // 3. Atualiza o estado inicial do botão de Treinar Erros
     updateErrorTrainingButton();
 
